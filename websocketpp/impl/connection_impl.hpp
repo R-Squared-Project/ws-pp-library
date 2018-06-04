@@ -576,7 +576,7 @@ void connection<config>::set_body(std::string const & value) {
 }
 
 template <typename config>
-void connection<config>::set_body( std::string && value )
+void connection<config>::set_body( std::string&& value )
 {
    if (m_internal_state != istate::PROCESS_HTTP_REQUEST) {
        throw exception("Call to set_status from invalid state",
