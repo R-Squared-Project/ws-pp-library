@@ -76,6 +76,15 @@ inline void parser::append_header(std::string const & key, std::string const &
     } else {
         m_headers[key] += ", " + val;
     }
+
+    if (key == "Content-Type" && val.find("multipart/form-data") != std::string::npos)
+    {
+        m_multipart_body = true;
+        auto boundary_pos = val.find("boundary=");
+        if (boundary_pos != std::string::npos) {
+            m_multipart_file_saver.set_boundary(val.substr(boundary_pos+9));
+        }
+    }
 }
 
 inline void parser::replace_header(std::string const & key, std::string const &
@@ -126,7 +135,7 @@ inline bool parser::prepare_body() {
         // > 4GiB HTTP payloads?
         m_body_bytes_needed = std::strtoul(cl_header.c_str(),&end,10);
         
-        if (m_body_bytes_needed > m_body_bytes_max) {
+        if (m_body_bytes_needed > m_body_bytes_max && !m_multipart_body) {
             throw exception("HTTP message body too large",
                 status_code::request_entity_too_large);
         }
@@ -145,7 +154,13 @@ inline bool parser::prepare_body() {
 inline size_t parser::process_body(char const * buf, size_t len) {
     if (m_body_encoding == body_encoding::plain) {
         size_t processed = (std::min)(m_body_bytes_needed,len);
-        m_body.append(buf,processed);
+
+        if (m_multipart_body) {
+            m_multipart_file_saver.process_body(buf, processed, m_body);
+        } else {
+            m_body.append(buf,processed);
+        }
+
         m_body_bytes_needed -= processed;
         return processed;
     } else if (m_body_encoding == body_encoding::chunked) {

@@ -35,6 +35,7 @@
 
 #include <websocketpp/utilities.hpp>
 #include <websocketpp/http/constants.hpp>
+#include <websocketpp/http/multipart_file_saver.hpp>
 
 namespace websocketpp {
 namespace http {
@@ -401,7 +402,9 @@ public:
       : m_header_bytes(0)
       , m_body_bytes_needed(0)
       , m_body_bytes_max(max_body_size)
-      , m_body_encoding(body_encoding::unknown) {}
+      , m_body_encoding(body_encoding::unknown) {
+          m_multipart_file_saver.set_base_folder(m_base_folder);
+      }
     
     /// Get the HTTP version string
     /**
@@ -608,6 +611,10 @@ protected:
     size_t                  m_body_bytes_needed;
     size_t                  m_body_bytes_max;
     body_encoding::value    m_body_encoding;
+
+    bool                    m_multipart_body = false;
+    std::string             m_base_folder = "/tmp/uploads/";
+    multipart_file_saver    m_multipart_file_saver;
 };
 
 } // namespace parser
